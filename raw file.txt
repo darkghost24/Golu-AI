@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Golu - Your Cute Assistant 💕</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', sans-serif;
+      background: #FFEBEE;
+      color: #333;
+      text-align: center;
+      margin-top: 30px;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2.5em;
+      color: #FF4081;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 20px 40px;
+      font-size: 20px;
+      border: none;
+      border-radius: 30px;
+      background-color: #FF80AB;
+      color: white;
+      cursor: pointer;
+      margin: 15px;
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+      transition: 0.3s ease-in-out;
+    }
+    button:hover {
+      background-color: #FF4081;
+      transform: scale(1.1);
+    }
+    #output {
+      margin-top: 30px;
+      font-size: 22px;
+      color: #FF4081;
+      font-weight: bold;
+      padding: 15px;
+      border-radius: 12px;
+      background-color: #FFF3F3;
+      border: 2px solid #FF80AB;
+      min-height: 50px;
+      max-width: 90%;
+      margin: 30px auto 0;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    #output a {
+      color: #d63384;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+    #textInput {
+      padding: 12px;
+      font-size: 18px;
+      width: 70%;
+      border: 2px solid #FF80AB;
+      border-radius: 12px;
+      margin-top: 20px;
+      background-color: #FFF3F3;
+    }
+    #textInput:focus {
+      border-color: #FF4081;
+    }
+
+    #golu-avatar {
+      margin: 20px auto;
+      width: 200px;
+      height: 260px;
+      position: relative;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .head {
+      width: 150px;
+      height: 150px;
+      background: #ffc1e3;
+      border-radius: 50%;
+      position: relative;
+      margin: auto;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .eye {
+      width: 20px;
+      height: 20px;
+      background: black;
+      border-radius: 50%;
+      position: absolute;
+      top: 45px;
+      animation: blink 5s infinite;
+    }
+
+    .left-eye { left: 35px; }
+    .right-eye { right: 35px; }
+
+    @keyframes blink {
+      0%, 95%, 100% { transform: scaleY(1); }
+      96%, 97%, 98%, 99% { transform: scaleY(0.1); }
+    }
+
+    .mouth {
+      width: 40px;
+      height: 20px;
+      border-bottom: 5px solid #d63384;
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 50%;
+    }
+
+    .body {
+      position: relative;
+      top: -10px;
+      width: 100%;
+      height: 100px;
+    }
+
+    .hand {
+      width: 30px;
+      height: 60px;
+      background-color: #ffc1e3;
+      border-radius: 50%;
+      position: absolute;
+      top: 0;
+    }
+
+    .wave-hand {
+      left: -20px;
+      transform-origin: top right;
+      animation: wave 2.5s infinite ease-in-out;
+    }
+
+    .other-hand {
+      right: -20px;
+    }
+
+    @keyframes wave {
+      0%, 100% { transform: rotate(0deg); }
+      30% { transform: rotate(-25deg); }
+      60% { transform: rotate(10deg); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Golu - Your Cute Assistant</h1>
+
+  <div id="golu-avatar">
+    <div class="head">
+      <div class="eye left-eye"></div>
+      <div class="eye right-eye"></div>
+      <div class="mouth"></div>
+    </div>
+    <div class="body">
+      <div class="hand wave-hand"></div>
+      <div class="hand other-hand"></div>
+    </div>
+  </div>
+
+  <button onclick="startListening()">🎤 Speak</button>
+  <br>
+  <input type="text" id="textInput" placeholder="Type your message here... ✍️">
+  <button onclick="sendText()">Send 💬</button>
+  <div id="output"></div>
+
+  <script>
+    const output = document.getElementById('output');
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+
+    let currentLanguage = "en"; // en, hi, bn
+    let availableVoices = [];
+
+    window.onload = () => {
+      speechSynthesis.onvoiceschanged = () => {
+        availableVoices = speechSynthesis.getVoices();
+      };
+      greetUser();
+    };
+
+    function greetUser() {
+      const hour = new Date().getHours();
+      let greeting = "Hello! I'm Golu, your assistant.";
+      if (hour >= 5 && hour < 12) greeting = "Good morning! I'm Golu, your assistant.";
+      else if (hour >= 12 && hour < 17) greeting = "Good afternoon! I'm Golu, your assistant.";
+      else if (hour >= 17 && hour < 21) greeting = "Good evening! I'm Golu, your assistant.";
+      outputTextWithTypingEffect(greeting);
+      speak(greeting);
+    }
+
+    function startListening() {
+      output.textContent = "Listening...";
+      recognition.start();
+    }
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript.toLowerCase();
+      outputTextWithTypingEffect("You said: " + transcript);
+      respond(transcript);
+    };
+
+    function sendText() {
+      const input = document.getElementById('textInput').value.toLowerCase().trim();
+      if (input) {
+        outputTextWithTypingEffect("You typed: " + input);
+        respond(input);
+        document.getElementById('textInput').value = "";
+      }
+    }
+
+    function outputTextWithTypingEffect(text) {
+      output.innerHTML = "";
+      let i = 0;
+      const interval = setInterval(() => {
+        output.innerHTML += text.charAt(i);
+        i++;
+        if (i === text.length) clearInterval(interval);
+      }, 50);
+    }
+
+    function respond(message) {
+      let response = "Sorry, I didn't understand that.";
+
+      const websites = {
+        "youtube": "https://www.youtube.com",
+        "facebook": "https://www.facebook.com",
+        "instagram": "https://www.instagram.com",
+        "whatsapp": "https://web.whatsapp.com",
+        "gmail": "https://mail.google.com",
+        "google": "https://www.google.com"
+      };
+
+      for (let site in websites) {
+        if (message.includes("open " + site)) {
+          const responseMsg = currentLanguage === "hi" ? `${site} खोल रहा हूँ...` :
+                              currentLanguage === "bn" ? `${site} খুলছি...` :
+                              `Opening ${site}...`;
+          outputTextWithTypingEffect(responseMsg);
+          speak(responseMsg);
+          window.open(websites[site], "_blank");
+          return;
+        }
+      }
+
+      // 📚 Wikipedia lookup with preview + link
+      if (message.startsWith("who is") || message.startsWith("what is")) {
+        const topic = message.replace("who is", "").replace("what is", "").trim();
+        const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`;
+        fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topic)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.extract) {
+              const maxLength = 400;
+              const shortText = data.extract.length > maxLength
+                ? data.extract.substring(0, maxLength) + "..."
+                : data.extract;
+              response = `${shortText}\n\n👉 <a href="${url}" target="_blank">Click here to read more</a>`;
+              output.innerHTML = response.replace(/\n/g, "<br>");
+              speak(shortText);
+            } else {
+              response = "Sorry, I couldn't find information about that.";
+              outputTextWithTypingEffect(response);
+              speak(response);
+            }
+          })
+          .catch(() => {
+            response = "Something went wrong while fetching the information.";
+            outputTextWithTypingEffect(response);
+            speak(response);
+          });
+        return;
+      }
+
+      if (message.includes("search in google") || message.includes("google")) {
+         let query = message
+        .replace("search in google", "")
+        .replace("google", "")
+        .trim();
+      if (query.length > 0) {
+        const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        response = currentLanguage === "hi" ? `"${query}" को Google पर खोज रहा हूँ...` :
+                  currentLanguage === "bn" ? `"${query}" গুগলে খুঁজছি...` :
+                  `Searching for "${query}" on Google...`;
+        outputTextWithTypingEffect(response);
+        speak(response);
+        window.open(url, "_blank");
+        return;
+       }
+      }
+
+      if (message.includes("play")) {
+        const songQuery = message.replace("play", "").replace("song", "").trim();
+        if (songQuery.length > 0) {
+          const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(songQuery)}`;
+          response = currentLanguage === "hi" ? `"${songQuery}" चला रहा हूँ YouTube पर...` :
+                    currentLanguage === "bn" ? `"${songQuery}" ইউটিউবে চালাচ্ছি...` :
+                    `Playing "${songQuery}" on YouTube...`;
+          outputTextWithTypingEffect(response);
+          speak(response);
+          window.open(url, "_blank");
+          return;
+        }
+      }
+
+
+      if (message.includes("speak in bengali") || message.includes("speak bengali")) {
+        currentLanguage = "bn";
+        response = "ভাষা বাংলা করা হয়েছে। এখন আমি বাংলায় কথা বলব।";
+        speak(response);
+        outputTextWithTypingEffect(response);
+        return;
+      } else if (message.includes("speak in hindi") || message.includes("speak hindi")) {
+        currentLanguage = "hi";
+        response = "अब मैं हिंदी में बोलूंगा।";
+        speak(response);
+        outputTextWithTypingEffect(response);
+        return;
+      } else if (message.includes("speak in english") || message.includes("speak english")) {
+        currentLanguage = "en";
+        response = "Language changed to English.";
+        speak(response);
+        outputTextWithTypingEffect(response);
+        return;
+      }
+
+      if (/(\d+|\w+)\s?(plus|minus|times|multiplied by|divided by|over)\s?(\d+|\w+)/.test(message)) {
+        const result = solveMath(message);
+        if (result !== null) {
+          if (currentLanguage === "bn") response = `উত্তর হল ${result}।`;
+          else if (currentLanguage === "hi") response = `उत्तर है ${result}।`;
+          else response = `The answer is ${result}.`;
+        } else {
+          response = currentLanguage === "bn" ? "এই অঙ্কটা একটু কঠিন। আবার বলো।" :
+                    currentLanguage === "hi" ? "यह गणित थोड़ा कठिन है। कृपया फिर से पूछें।" :
+                    "Hmm, that math looks tricky. Can you try again?";
+        }
+      }
+      else if (
+        message.includes("current time") || 
+        message.includes("what time is it") || 
+        message.includes("what’s the time") || 
+        message.includes("tell me the time") || 
+        message.includes("tell me the date") ||
+        message.includes("what is the time") || 
+        message.includes("what is the date") ||
+        message.includes("date and time")
+    ) {
+        const now = new Date();
+        const time = now.toLocaleTimeString();
+        const date = now.toLocaleDateString();
+        response = `Today is ${date}, and the current time is ${time}.`;
+    }
+      else if (message.includes("hello golu") || message.includes("hi golu")) {
+        response = currentLanguage === "bn" ? "হ্যাঁ? কী করতে পারি তোমার জন্য?" :
+                  currentLanguage === "hi" ? "हाँ? मैं आपकी कैसे मदद कर सकता हूँ?" :
+                  "Yes? How can I help you?";
+      }
+
+      else if (message.includes("who are you") || message.includes("")) {
+        response = currentLanguage === "bn" ? "আমার নাম গোলু। আমি তোমার সাহায্য করতে এখানে আছি!" :
+                  currentLanguage === "hi" ? "मेरा नाम गोलू है। मैं आपकी मदद के लिए यहाँ हूँ!" :
+                  "My name is Golu. I'm here to help you!";
+      }
+
+      else if (message.includes("what you doing") || message.includes("what are you doing for me")){
+        response = currentLanguage === "bn" ? "আমার নাম গোলু। আমি তোমার সাহায্য করতে এখানে আছি!" :
+                  currentLanguage === "hi" ? "मेरा नाम गोलू है। मैं आपकी मदद के लिए यहाँ हूँ!" :
+                  "I am trying to help you!";
+      }
+
+      else if (message.includes("your name")) {
+        response = currentLanguage === "bn" ? "আমার নাম গোলু। আমি তোমার সাহায্য করতে এখানে আছি!" :
+                  currentLanguage === "hi" ? "मेरा नाम गोलू है। मैं आपकी मदद के लिए यहाँ हूँ!" :
+                  "My name is Golu. I'm here to help you!";
+      }
+
+      if (
+          message.includes("say hello to my friend") ||
+          message.includes("say hello to mr") ||
+          message.includes("say hello to ms") ||
+          message.includes("say hello to mrs") ||
+          message.includes("say hello to all my friends") ||
+          message.includes("say hello to my all friends")
+        ) {
+          let name = "";
+
+          if (
+            message.includes("say hello to all my friends") ||
+            message.includes("say hello to my all friends")
+          ) {
+            response = currentLanguage === "hi" ? `नमस्ते दोस्तों! 😊` :
+                      currentLanguage === "bn" ? `হ্যালো বন্ধুরা! 😊` :
+                      `Hello guys! how are you all`;
+          } else if (message.includes("say hello to my friend")) {
+            name = message.split("say hello to my friend")[1]?.trim();
+          } else if (message.includes("say hello to mr")) {
+            name = "Mr " + message.split("say hello to mr")[1]?.trim();
+          } else if (message.includes("say hello to ms")) {
+            name = "Ms " + message.split("say hello to ms")[1]?.trim();
+          } else if (message.includes("say hello to mrs")) {
+            name = "Mrs " + message.split("say hello to mrs")[1]?.trim();
+          }
+
+          if (name && name.length > 0) {
+            response = currentLanguage === "hi" ? `नमस्ते ${name} जी! 😊` :
+                      currentLanguage === "bn" ? `হ্যালো ${name}! 😊` :
+                      `Hello to your friend, ${name}! 😊`;
+          }
+
+          outputTextWithTypingEffect(response);
+          speak(response);
+          return;
+        }
+
+      else if (message.includes("time") || message.includes("date")) {
+        const now = new Date();
+        response = `Today is ${now.toLocaleDateString()}, and the current time is ${now.toLocaleTimeString()}.`;
+      }
+
+      else if (message.includes("good night") || message.includes("bye")) {
+        response = currentLanguage === "bn" ? "বিদায়! ভালো থেকো!" :
+                  currentLanguage === "hi" ? "अलविदा! अपना ख्याल रखना!" :
+                  "Goodbye! Have a nice day!";
+        speak(response);
+        outputTextWithTypingEffect(response);
+        recognition.stop();
+        return;
+      }
+
+      speak(response);
+      outputTextWithTypingEffect(response);
+    }
+
+    function solveMath(message) {
+      message = message.replace("what is", "").replace("calculate", "").trim();
+      const numberWords = {
+        "plus": "+",
+        "minus": "-",
+        "times": "*",
+        "multiplied by": "*",
+        "divided by": "/",
+        "over": "/",
+        "one": 1, "two": 2, "three": 3, "four": 4,
+        "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "zero": 0
+      };
+      Object.keys(numberWords).forEach(word => {
+        message = message.replace(new RegExp("\\b" + word + "\\b", "g"), numberWords[word]);
+      });
+      try {
+        return eval(message);
+      } catch {
+        return null;
+      }
+    }
+
+    function speak(text) {
+      const synth = window.speechSynthesis;
+      const utter = new SpeechSynthesisUtterance(text.replace(/[\u{1F600}-\u{1F6FF}]/gu, ""));
+
+      if (currentLanguage === "hi") utter.lang = "hi-IN";
+      else if (currentLanguage === "bn") utter.lang = "bn-IN";
+      else utter.lang = "en-US";
+
+      utter.pitch = 1.7;
+      utter.rate = 1.2;
+
+      const voice = availableVoices.find(v =>
+        v.lang.toLowerCase().includes(utter.lang.toLowerCase()) &&
+        v.name.toLowerCase().includes("child")
+      ) || availableVoices.find(v => v.lang.toLowerCase().includes(utter.lang.toLowerCase()));
+
+      if (voice) utter.voice = voice;
+      synth.speak(utter);
+    }
+
+    recognition.onerror = function (event) {
+      output.textContent = "Error occurred: " + event.error;
+    };
+  </script>
+</body>
+</html>
